@@ -1,0 +1,13 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/MainMenu.unity
+    guid: e93214e1371e27c489f8ea88fd18e3d8
+  - enabled: 1
+    path: Assets/Scenes/ProvingGrounds.unity
+    guid: c3bdd3c12489048839ece5ce8cd0c8cb
