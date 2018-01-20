@@ -1,64 +1,77 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using UnityEngine.Networking;
 
-public class Hand : MonoBehaviour
+public class Hand : NetworkBehaviour
 {
-    public float swapTime;
-    public int maxWeaponsAllowed;
-
-    private float timer;
+    private Camera playerCamera;
     private int currentWeapon;
     private Weapon[] weapons;
-    
-    public Weapon CurrentWeapon()
+
+    public Weapon CurrrentWeapon()
     {
         return weapons[currentWeapon];
     }
 
+    [Command]
+    void CmdRegisterDamage(string playerID)
+    {
+        Debug.Log(playerID + " has taken damage!");
+    }
+
+    [Client]
+    void FireWeapon()
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(playerCamera.transform.position, playerCamera.transform.forward, out hit, weapons[currentWeapon].range, weapons[currentWeapon].mask))
+        {
+            if (hit.collider.CompareTag("Player"))
+            {
+                CmdRegisterDamage(hit.collider.name);
+            }
+        }
+
+    //weapons[currentWeapon].SetFireTimer(weapons[currentWeapon].FireTimer() - Time.deltaTime);
+    //if(Input.GetMouseButton(0) && weapons[currentWeapon].FireTimer() <= 0.0f)
+    //{
+    //    weapons[currentWeapon].Fire();
+    //}
+    }
 	// Use this for initialization
 	void Start ()
     {
-        timer = swapTime;
-        currentWeapon = 0;
-
-        weapons = GetComponentsInChildren<Weapon>();
-        for(int w = 0; w < weapons.Length; ++w)
+        //Get reference to the player's camera
+        playerCamera = GetComponentInChildren<Camera>();
+        if(!playerCamera)
         {
-            if(w == currentWeapon)
-            {
-                weapons[w].gameObject.SetActive(true);
-            }
-            else
-            {
-                weapons[w].gameObject.SetActive(false);
-            }
+            Debug.LogError("[Hand.cs] Cannot find the player's camera!");
         }
+
+        //Get reference to current weapon
+        currentWeapon = 0;
+        weapons = GetComponentsInChildren<Weapon>();
+        foreach(Weapon weapon in weapons)
+        {
+            weapon.gameObject.SetActive(false);
+        }
+        weapons[currentWeapon].gameObject.SetActive(true);
 	}
 	// Update is called once per frame
 	void Update ()
     {
-        if (Input.GetAxis("Mouse ScrollWheel") > 0.0f)
+        if(Input.GetMouseButton(0))
         {
-            //Next weapon
-            weapons[currentWeapon].gameObject.SetActive(false);
-            ++currentWeapon;
-            if(currentWeapon > (weapons.Length - 1))
-            {
-                currentWeapon = 0;
-            }
-            weapons[currentWeapon].gameObject.SetActive(true);
+            FireWeapon();
         }
-        else if(Input.GetAxis("Mouse ScrollWheel") < 0.0f)
-        {
-            //Previous weapon
-            weapons[currentWeapon].gameObject.SetActive(false);
-            --currentWeapon;
-            if (currentWeapon < 0)
-            {
-                currentWeapon = (weapons.Length - 1);
-            }
-            weapons[currentWeapon].gameObject.SetActive(true);
-        }
+        VentWeapon();
 	}
+    void VentWeapon()
+    {
+        if(Input.GetKeyDown(KeyCode.R))
+        {
+            if(weapons[currentWeapon].heatSystem.CurrentHeatLevel() > 0.0f)
+            {
+                weapons[currentWeapon].IsVenting(true);
+            }
+        }
+    }
 }

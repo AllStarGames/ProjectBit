@@ -20,7 +20,7 @@ public class GravityWell : MonoBehaviour
     {
         if(other.GetComponent<Rigidbody>())
         {
-            other.GetComponent<Controller>().flags.IsDisabled(true);
+            //other.GetComponent<Controller>().flags.IsDisabled(true);
             other.GetComponent<Rigidbody>().velocity = force;
         }
     }
@@ -28,7 +28,7 @@ public class GravityWell : MonoBehaviour
     {
         if (other.GetComponent<Rigidbody>())
         {
-            other.GetComponent<Controller>().flags.IsDisabled(false);
+            //other.GetComponent<Controller>().flags.IsDisabled(false);
         }
     }
 }

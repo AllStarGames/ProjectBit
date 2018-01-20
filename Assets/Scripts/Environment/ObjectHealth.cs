@@ -17,6 +17,50 @@ public class ObjectHealth : MonoBehaviour
     private MeshRenderer meshRenderer;
     private Renderer[] renderers;
 
+    public bool Dead()
+    {
+        return dead;
+    }
+    public Color EmissionColour()
+    {
+        return emissionColour;
+    }
+    public Collider GetCollider()
+    {
+        return collider;
+    }
+    public float CurrentHealth()
+    {
+        return currentHealth;
+    }
+    public float Timer()
+    {
+        return timer;
+    }
+    public MeshRenderer GetMeshRenderer()
+    {
+        return meshRenderer;
+    }
+    public Renderer[] Renderers()
+    {
+        return renderers;
+    }
+    public void IsDead(bool value)
+    {
+        dead = value;
+    }
+    public void SetEmissionColour(Color colour)
+    {
+        emissionColour = colour;
+    }
+    public void SetCurrentHealth(float value)
+    {
+        currentHealth = value;
+    }
+    public void SetTimer(float value)
+    {
+        timer = value;
+    }
     public void TakeDamage(Weapon.DamageVariables damage)
     {
         currentHealth -= damage.physical;

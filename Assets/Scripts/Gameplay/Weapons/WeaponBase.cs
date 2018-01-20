@@ -1,7 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
 public class Weapon : MonoBehaviour
 {
     [System.Serializable]
@@ -45,6 +45,9 @@ public class Weapon : MonoBehaviour
     public float force;
     public float range;
     public HeatVariables heatSystem;
+    public LayerMask mask;
+    public Sprite icon;
+    public string name;
 
     protected bool overheated;
     protected bool venting;
@@ -52,15 +55,42 @@ public class Weapon : MonoBehaviour
     protected Color emissionColour;
     protected float coolTimer;
     protected float fireTimer;
+    protected List<ParticleSystem> muzzleFlash;
+    protected List<ParticleSystem> steam;
     protected MeshRenderer meshRenderer;
-    protected ParticleSystem muzzleFlash;
-    protected ParticleSystem steam;
-
+    
     public virtual void Aim()
     {    }
+    public virtual void Cool()
+    {
+        emissionColour = Color.Lerp(lowHeatColour, highHeatColour, heatSystem.CurrentHeatLevel() / 100.0f);
+        meshRenderer.material.SetColor("_EmissionColor", emissionColour);
+
+        coolTimer -= Time.deltaTime;
+        if (coolTimer <= 0)
+        {
+            if (heatSystem.CurrentHeatLevel() > 0.0f)
+            {
+                heatSystem.SetHeatLevel(heatSystem.CurrentHeatLevel() - heatSystem.coolRate);
+                if (heatSystem.CurrentHeatLevel() <= 0.0f)
+                {
+                    heatSystem.SetHeatLevel(0.0f);
+                }
+            }
+        }
+    }
     public virtual void Fire()
     {
-        muzzleFlash.Play();
+        emissionColour = Color.Lerp(lowHeatColour, highHeatColour, heatSystem.CurrentHeatLevel() / 100.0f);
+        meshRenderer.material.SetColor("_EmissionColor", emissionColour);
+
+        coolTimer = heatSystem.coolDelay;
+        fireTimer = fireRate;
+
+        foreach(ParticleSystem flash in muzzleFlash)
+        {
+            flash.Play();
+        }
     }
 
     public bool Overheated()
@@ -87,17 +117,17 @@ public class Weapon : MonoBehaviour
     {
         return fireTimer;
     }
-    public MeshRenderer MeshRendererObject()
-    {
-        return meshRenderer;
-    }
-    public ParticleSystem MuzzleFlashEffect()
+    public List<ParticleSystem> MuzzleFlashEffect()
     {
         return muzzleFlash;
     }
-    public ParticleSystem SteamEffect()
+    public List<ParticleSystem> SteamEffect()
     {
         return steam;
+    }
+    public MeshRenderer MeshRendererObject()
+    {
+        return meshRenderer;
     }
     public void IsOverheated(bool value)
     {
@@ -127,27 +157,35 @@ public class Weapon : MonoBehaviour
     {
         meshRenderer = mr;
     }
-    public void SetMuzzleFlash(ParticleSystem effect)
+    public void SetMuzzleFlash(List<ParticleSystem> effects)
     {
-        muzzleFlash = effect;
+        muzzleFlash = effects;
     }
-    public void SetSteam(ParticleSystem effect)
+    public void SetSteam(List<ParticleSystem> effects)
     {
-        steam = effect;
+        steam = effects;
     }
 
     void Overheat()
     {
-        if (steam.isStopped)
+        Debug.Log("[" + GetType() + ".cs] Has been overheated!");
+        
+        foreach(ParticleSystem effect in steam)
         {
-            steam.Play();
+            if (effect.isStopped)
+            {
+                effect.Play();
+            }
         }
         heatSystem.SetHeatLevel(heatSystem.CurrentHeatLevel() - (heatSystem.overheatTime * Time.deltaTime));
         if(heatSystem.CurrentHeatLevel() <= 0.0f)
         {
-            if (steam.isPlaying)
+            foreach (ParticleSystem effect in steam)
             {
-                steam.Stop();
+                if (effect.isPlaying)
+                {
+                    effect.Stop();
+                }
             }
             heatSystem.SetHeatLevel(0.0f);
             overheated = false;
@@ -161,17 +199,20 @@ public class Weapon : MonoBehaviour
         heatSystem.SetHeatLevel(0.0f);
         emissionColour = lowHeatColour;
 
+        muzzleFlash = new List<ParticleSystem>();
+        steam = new List<ParticleSystem>();
+
         ParticleSystem[] pSystems = GetComponentsInChildren<ParticleSystem>();
         foreach (ParticleSystem pSystem in pSystems)
         {
             if(pSystem.name == "MuzzleFlash")
             {
-                muzzleFlash = pSystem;
+                muzzleFlash.Add(pSystem);
             }
             else if (pSystem.name == "Steam")
             {
-                steam = pSystem;
-                steam.Stop();
+                pSystem.Stop();
+                steam.Add(pSystem);
             }
         }
 
@@ -181,7 +222,7 @@ public class Weapon : MonoBehaviour
             Debug.LogError("[Weapon.cs] " + transform.name + " cannot find " + transform.parent.name + "'s camera!");
         }
 
-        meshRenderer = GetComponent<MeshRenderer>();
+        meshRenderer = GetComponentInChildren<MeshRenderer>();
         if(!meshRenderer)
         {
             Debug.LogError("[Weapon.cs] Could not find the mesh renderer on " + transform.name + "!");
@@ -190,10 +231,7 @@ public class Weapon : MonoBehaviour
     }
     void Update()
     {
-        emissionColour = Color.Lerp(lowHeatColour, highHeatColour, heatSystem.CurrentHeatLevel() / 100.0f);
-        meshRenderer.material.SetColor("_EmissionColor", emissionColour);
-
-        if (overheated)
+        if(overheated)
         {
             Overheat();
         }
@@ -201,43 +239,19 @@ public class Weapon : MonoBehaviour
         {
             Vent();
         }
-        else
-        {
-            fireTimer -= Time.deltaTime;
-            if (Input.GetMouseButton(0) && fireTimer <= 0.0f)
-            {
-                coolTimer = heatSystem.coolDelay;
-                fireTimer = fireRate;
-
-                Fire();
-            }
-            else
-            {
-                coolTimer -= Time.deltaTime;
-                if(coolTimer <= 0)
-                {
-                    if(heatSystem.CurrentHeatLevel() > 0.0f)
-                    {
-                        heatSystem.SetHeatLevel(heatSystem.CurrentHeatLevel() - heatSystem.coolRate);
-                        if(heatSystem.CurrentHeatLevel() <= 0.0f)
-                        {
-                            heatSystem.SetHeatLevel(0.0f);
-                        }
-                    }
-                }
-
-                if(Input.GetKeyDown(KeyCode.R) && heatSystem.CurrentHeatLevel() > 0.0f)
-                {
-                    venting = true;
-                }
-            }
-        }
     }
     void Vent()
     {
-        if (steam.isStopped)
+        Debug.Log("[" + GetType() + ".cs] Now being vented!");
+
+        emissionColour = Color.Lerp(lowHeatColour, highHeatColour, heatSystem.CurrentHeatLevel() / 100.0f);
+        meshRenderer.material.SetColor("_EmissionColor", emissionColour);
+        foreach (ParticleSystem effect in steam)
         {
-            steam.Play();
+            if (effect.isStopped)
+            {
+                effect.Play();
+            }
         }
 
         heatSystem.SetHeatLevel(heatSystem.CurrentHeatLevel() - (heatSystem.ventRate * Time.deltaTime));
@@ -245,9 +259,12 @@ public class Weapon : MonoBehaviour
         {
             heatSystem.SetHeatLevel(0.0f);
             venting = false;
-            if (steam.isPlaying)
+            foreach (ParticleSystem effect in steam)
             {
-                steam.Stop();
+                if (effect.isPlaying)
+                {
+                    effect.Stop();
+                }
             }
         }
     }

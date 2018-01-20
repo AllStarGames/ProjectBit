@@ -8,27 +8,47 @@ public class Encoder : Weapon
     {
         base.Aim();
     }
-
     public override void Fire()
     {
         base.Fire();
 
         RaycastHit hit;
-        if (Physics.Raycast(camera.transform.position, camera.transform.forward, out hit, range, LayerMask.NameToLayer("Target")))
+        if (Physics.Raycast(camera.transform.position, camera.transform.forward, out hit, range, mask))
         {
-            Debug.Log("[Weapon.cs]" + transform.name + " hit " + hit.transform.name);
-            if (hit.transform.GetComponent<Health>())
+            if(hit.transform.CompareTag("Player"))
             {
-                hit.transform.GetComponent<Health>().TakeDamage(damage);
-                if (hit.transform.GetComponent<Rigidbody>())
+                Player player = GameManager.GetPlayer(hit.transform.name);
+                if(player.GetComponent<Health>())
                 {
-                    hit.transform.GetComponent<Rigidbody>().AddForce(-hit.normal * force);
+                    player.GetComponent<Health>().TakeDamage(damage);
+                    if(player.GetComponent<Rigidbody>())
+                    {
+                        player.GetComponent<Rigidbody>().AddForce(-hit.normal * force);
+                    }
+                    else
+                    {
+                        Debug.LogError("[] Could not find the Rigidbody component on " + hit.transform.name + "!");
+                    }
+                }
+                else
+                {
+                    Debug.LogError("[Encoder.cs] Could not find the Health component on " + hit.transform.name + "!");
                 }
             }
-            else if (hit.transform.GetComponent<ObjectHealth>())
-            {
-                hit.transform.GetComponent<ObjectHealth>().TakeDamage(damage);
-            }
+
+            //Debug.Log("[Weapon.cs]" + transform.name + " hit " + hit.transform.name);
+            //if (hit.transform.GetComponent<Health>())
+            //{
+            //    hit.transform.GetComponent<Health>().TakeDamage(damage);
+            //    if (hit.transform.GetComponent<Rigidbody>())
+            //    {
+            //        hit.transform.GetComponent<Rigidbody>().AddForce(-hit.normal * force);
+            //    }
+            //}
+            //else if (hit.transform.GetComponent<ObjectHealth>())
+            //{
+            //    hit.transform.GetComponent<ObjectHealth>().TakeDamage(damage);
+            //}
         }
 
         heatSystem.SetHeatLevel(heatSystem.CurrentHeatLevel() + heatSystem.heatRate);

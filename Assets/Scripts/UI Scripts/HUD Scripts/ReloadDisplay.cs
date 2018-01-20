@@ -14,7 +14,7 @@ public class ReloadDisplay : MonoBehaviour
     {
         progressBar = GetComponentInChildren<Image>();
         reloadText = GetComponentInChildren<Text>();
-        weapon = transform.parent.parent.parent.parent.GetComponentInChildren<Hand>().CurrentWeapon();
+        //weapon = transform.parent.parent.parent.parent.GetComponentInChildren<Hand>().CurrentWeapon();
 	}
 	
 	// Update is called once per frame
